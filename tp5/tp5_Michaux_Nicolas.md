@@ -234,11 +234,6 @@ IV. Serveur DHCP
 [oui@routeur dhcp]$ sudo nano dhcpd.conf
 ```
 ```
-option domain-name-servers     1.1.1.1;
-
-authoritative;
-
-
 subnet 10.5.1.0 netmask 255.255.255.0 {
     range dynamic-bootp 10.5.1.137 10.5.1.237;
     option routers 10.5.1.254;
