@@ -206,6 +206,24 @@ network:
 
 III. Serveur SSH
 
+
+☀️ Sur routeur.tp5.b1, déterminer sur quel port écoute le serveur SSH
+
+```
+[oui@routeur ~]$ sudo ss -npt | grep 52122
+ESTAB 0      0         10.5.1.254:22       10.5.1.1:52122 users:(("sshd",pid=1331,fd=4),("sshd",pid=1317,fd=4))
+```
+
+☀️ Sur routeur.tp5.b1, vérifier que ce port est bien ouvert
+
+```
+[oui@routeur ~]$ sudo ss -npu | grep 67
+0      0      10.0.2.15%enp0s3:68       10.0.2.2:67   users:(("NetworkManager",pid=713,fd=29))
+```
+
+
+IV. Serveur DHCP
+
  ☀️ Installez et configurez un serveur DHCP sur la machine routeur.tp5.b1
 
  ```
