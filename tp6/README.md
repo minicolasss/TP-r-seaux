@@ -228,6 +228,7 @@ IP4.DNS[1]:                             10.6.2.12
     <style type="text/css">
       /*<![CDATA[*/
 ```
-## 4. Bonus : forger des trames
+## 4. Bonus : forger des trames  
+## Le bonus à était fait
 
-[Ptit TP bonus orienté dév et sécu](./scapy.md), pour jouer à forger des trames et des paquets à la main. ~~Dans le but de faire des trucs complètement legitimes.~~
+[Ptit TP bonus orienté dév et sécu](./scapy.md), 
