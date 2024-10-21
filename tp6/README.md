@@ -47,7 +47,7 @@ Vboxnet 2 : 10.6.2.1
 ☀️ **Prouvez que...**
 
 - une machine du LAN1 peut joindre internet (ping un nom de domaine)
-```
+```zsh
 ┌──(kali㉿client1)-[~]
 └─$ ping ynov.com 
 
@@ -57,7 +57,7 @@ rtt min/avg/max/mdev = 17.579/18.944/20.309/1.365 ms
 
 ```
 - une machine du LAN2 peut joindre internet (ping nom de domaine)
-```
+```zsh
 [root@dns ~]# ping ynov.com
 
 --- ynov.com ping statistics ---
@@ -66,7 +66,7 @@ rtt min/avg/max/mdev = 15.478/16.956/19.654/1.910 ms
 
 ```
 - une machine du LAN1 peut joindre une machine du LAN2 (ping une adresse IP)
-```
+```zsh
 ┌──(kali㉿client1)-[~]
 └─$ ping 10.6.2.12
 
@@ -80,7 +80,7 @@ rtt min/avg/max/mdev = 1.877/2.411/2.754/0.382 ms
 
 ## 1. Serveur DHCP
 
-```
+```zsh
 [root@dhcp oui]# cat /etc/dhcp/dhcpd.conf 
 subnet 10.6.1.0 netmask 255.255.255.0 {
 	range dynamic-bootp 10.6.1.37 10.6.1.137;
@@ -90,7 +90,7 @@ subnet 10.6.1.0 netmask 255.255.255.0 {
 }
 ```
 les commande à realiser
-```
+```zsh
 dnf -y install dhcp-server 
 
 systemctl enable --now dhcpd 
@@ -107,7 +107,7 @@ firewall-cmd --runtime-to-permanent
 ➜ **Allumez `client1.tp6.b1` et configurez sa carte réseau en DHCP**
 
 - il devrait récupérer automatiquement une adresse IP auprès de votre serveur DHCP
-```
+```zsh
 ┌──(kali㉿client1)-[~]
 └─$ ip a
 
@@ -116,14 +116,14 @@ firewall-cmd --runtime-to-permanent
     inet 10.6.1.37/24 brd 10.6.1.255 scope global dynamic noprefixroute eth0
 ```
 - et apprendre l'adresse de la passerelle de ce réseau
-```
+```zsh
 ┌──(kali㉿client1)-[~]
 └─$ ip route | grep default
 
 default via 10.6.1.254 dev eth0 proto dhcp src 10.6.1.37 metric 100 
 ```
 - et l'adresse d'un DNS utilisable
-```
+```zsh
 ┌──(kali㉿client1)-[~]
 └─$ nmcli -p device show 
 
@@ -133,13 +133,13 @@ IP4.DNS[1]:                             10.6.2.12
 
 - le client a bien récupéré une adresse IP en DHCP
   - avec un `ip a` le mot-clé `dynamic` doit être écrit sur la ligne qui contient l'adresse IP
-```
+```zsh
 ┌──(kali㉿client1)-[~]
 └─$ ip a | grep dynamic
     inet 10.6.1.37/24 brd 10.6.1.255 scope global dynamic noprefixroute eth0
 ```
 - vous avez bien `1.1.1.1` en DNS
-```
+```zsh
 ┌──(kali㉿client1)-[~]
 └─$ nmcli -p device show 
 ============================================================================>
@@ -153,15 +153,14 @@ IP4.DNS[1]:                             1.1.1.1
 ```
 
 - vous avez bien la bonne passerelle indiquée
-```
+```zsh
 ┌──(kali㉿client1)-[~]
 └─$ ip route | grep default
 
 default via 10.6.1.254 dev eth0 proto dhcp src 10.6.1.37 metric 100 
 ```
 - que ça `ping` un nom de domaine public sans problème magueule
-```
-                                                                             
+```zsh
 ┌──(kali㉿client1)-[~]
 └─$ ping ynov.com
 
@@ -183,25 +182,52 @@ rtt min/avg/max/mdev = 18.716/21.230/23.744/2.514 ms
 
 ## 3. Serveur DHCP
 
-What ?! Again ?!
-
-Nan nan juste, on va aller changer une ligne dans la configuration de `dhcp.tp6.b1`.
-
-Bah oui ! On a notre propre serveur DNS maintenant ! Faut le dire à nos clients qu'ils peuvent l'utiliser :d
-
 ➜ **Editez la configuration du serveur DHCP sur `dhcp.tp6.b1`**
 
 - faut qu'il file l'adresse IP `10.6.2.12` comme DNS à tous les nouveaux clients !
+```bash
+[root@dhcp oui]# cat /etc/dhcp/dhcpd.conf 
+subnet 10.6.1.0 netmask 255.255.255.0 {
+	range dynamic-bootp 10.6.1.37 10.6.1.137;
+	option broadcast-address 10.6.1.255;
+	option routers 10.6.1.254;
+	option domain-name-servers 10.6.2.12;
+}
+```
 
 ☀️ **Créez un nouveau client `client2.tp6.b1` vitefé**
 
-- supprimez le `client1` si vous voulez, on a pu besoin
 - récupérez une IP en DHCP sur ce nouveau `client2.tp6.b1`
+```zsh
+┌──(kali㉿kali)-[~]
+└─$ ip a
+2: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc fq_codel state 
+    inet 10.6.1.38/24 brd 10.6.1.255 scope global dynamic noprefixroute
+```
+
 - vérifiez que vous avez bien `10.6.2.12` comme serveur DNS à contacter
-  - commande dans le mémo pour voir le serveur DNS connu actuellement
+```zsh
+┌──(kali㉿kali)-[~]
+└─$ nmcli -p device show
+============================================================================>
+                             Device details (eth0)
+===========================================================================
+IP4.DNS[1]:                             10.6.2.12
+```
 
 ➜ **Vous devriez pouvoir visiter `http://web.tp6.b1` avec le navigateur, ça devrait fonctionner sans aucune autre action.**
-
+```zsh
+┌──(kali㉿kali)-[~]
+└─$ curl http://web.tp6.b1            
+<!doctype html>
+<html>
+  <head>
+    <meta charset='utf-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1'>
+    <title>HTTP Server Test Page powered by: Rocky Linux</title>
+    <style type="text/css">
+      /*<![CDATA[*/
+```
 ## 4. Bonus : forger des trames
 
 [Ptit TP bonus orienté dév et sécu](./scapy.md), pour jouer à forger des trames et des paquets à la main. ~~Dans le but de faire des trucs complètement legitimes.~~

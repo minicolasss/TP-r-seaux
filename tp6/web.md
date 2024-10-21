@@ -15,7 +15,7 @@ sudo systemctl enable --now nginx
 ☀️ **Déterminer sur quel port écoute le serveur NGINX**
 
 - isolez la ligne intéressante avec un `... | grep <PORT>` une fois que vous avez repéré le port
-```
+```bash
 [root@web oui]# ss -lnpt
 State     Recv-Q    Send-Q       Local Address:Port        Peer Address:Port    Process                                                                         
 LISTEN    0         511                0.0.0.0:80               0.0.0.0:*        users:(("nginx",pid=813,fd=6),("nginx",pid=812,fd=6),("nginx",pid=811,fd=6))   
@@ -25,12 +25,12 @@ LISTEN    0         511                   [::]:80                  [::]:*       
 ☀️ **Ouvrir ce port dans le firewall**
 
 - bien que NGINX soit en train d'écouter sur le port repéré, et attende la connexion de clients potentiels...
-```
+```bash
 sudo firewall-cmd --permanent --add-port=80/tcp
 sudo firewall-cmd --reload
 ```
 vérification
-```
+```bash
 [root@web oui]# firewall-cmd --list-all
 public (active)
 
@@ -48,7 +48,7 @@ Le serveur avait comme IP 10.6.2.13
 
 
 - pour le compte-rendu, depuis le terminal de `client1.tp6.b1` : `curl http://10.6.2.11`
-```
+```bash
 ┌──(kali㉿client1)-[~]
 └─$ curl http://10.6.2.11            
 <!doctype html>
@@ -61,7 +61,7 @@ Le serveur avait comme IP 10.6.2.13
       /*<![CDATA[*/
 ```
 et pour le kiff 
-```
+```bash
 ┌──(kali㉿client1)-[~]
 └─$ curl http://10.6.2.13            
 <!doctype html>
