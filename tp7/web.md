@@ -110,7 +110,7 @@ success
 ┌──(kali㉿kali)-[~]
 └─$ cat /etc/hosts
 ...
-10.7.1.11 sitedefou
+10.7.1.11 sitedefou.tp7.b1
 ```
 
 🌞 **Vérifier que ça a pris effet**
@@ -118,9 +118,9 @@ success
 - faites un `ping` vers `sitedefou.tp7.b1`
 ```zsh
 ┌──(kali㉿kali)-[~]
-└─$ ping sitedefou
+└─$ ping sitedefou.tp7.b1
 
---- sitedefou ping statistics ---
+--- sitedefou.tp7.b1 ping statistics ---
 2 packets transmitted, 2 received, 0% packet loss, time 1002ms
 rtt min/avg/max/mdev = 1.507/1.577/1.647/0.070 ms
 ```

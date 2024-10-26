@@ -152,26 +152,43 @@ success
 
 ➜ **Installer Wireguard**
 
-- allez, je donne pas la commande, demande à google pour savoir comment le faire sur le client !s
+```zsh
+┌──(oui㉿oui)-[~]
+└─$ sudo apt install wireguard
+```
 
 ➜ **Générer la paire de clés du client**
 
-- même commande que sur le serveur
+```zsh
+┌──(oui㉿oui)-[~]
+└─$ wg genkey | sudo tee /etc/wireguard/wg0.priv | wg pubkey | sudo tee /etc/wireguard/wg0.pub
+
+4pYiU8qjoLR2B2QlKzTfpJfTy7/RmfJY5MctvEjZUxQ=
+```
+
+```zsh
+┌──(oui㉿oui)-[~]
+└─$ sudo cat /etc/wireguard/wg0.priv
+[sudo] password for oui: 
+eGphtM6W+EBIwavVk4gZHtFvHH8u8zF9uJYfvqQg6nI=
+                                                                             
+┌──(oui㉿oui)-[~]
+└─$ sudo cat /etc/wireguard/wg0.pub 
+4pYiU8qjoLR2B2QlKzTfpJfTy7/RmfJY5MctvEjZUxQ=
+```
 
 ➜ **Ecrire le fichier de configuration du client**
 
-- créer le fichier `/etc/wireguard/wg0.conf`
-  - remplacez les clés par les bonnes valeurs
-  - il faut `sudo cat` sur les clés pour les afficher et les insérer
-- avec le contenu :
 
 ```bash
+┌──(oui㉿oui)-[~]
+└─$ sudo cat /etc/wireguard/wg0.conf
 [Interface]
-PrivateKey = <CLE_PRIVEE_DU_CLIENT>
+PrivateKey = eGphtM6W+EBIwavVk4gZHtFvHH8u8zF9uJYfvqQg6nI=
 Address = 10.7.200.11/24
 
 [Peer]
-PublicKey = <CLE_PUBLIQUE_DU_SERVEUR>
+PublicKey = XvFnMbp/P2vYWYjER44EXv85MXb6gJLBz2ntNZT4P3I=
 AllowedIPs = 0.0.0.0/0
 Endpoint = 10.7.1.111:51820
 PersistentKeepalive = 25
@@ -180,96 +197,188 @@ PersistentKeepalive = 25
 ➜ **Allumer l'interface `wg0` du client**
 
 ```bash
-sudo wg-quick up wg0
+┌──(oui㉿oui)-[~]
+└─$ sudo wg-quick up wg0
 ```
 
 ---
 
-> *De retour sur le serveur `vpn.tp7.b1`.*
 
 ➜ **Modifier le fichier de configuration du serveur**
 
-- on ajoute une section `[Peer]` pour indiquer
-  - l'IP du client
-  - sa clé publique
 
 ```bash
+[root@dns oui]# cat /etc/wireguard/wg0.conf 
 [Interface]
-PrivateKey = <CLE_PRIVEE_DU_SERVEUR>
+PrivateKey = KNgeHvZcPU62FHtK0jTz/fkbge+ejT1eydU2j5kz21o=
 Address = 10.7.200.1/24
 ListenPort = 51820
 
 
 [Peer]
-PublicKey = <CLE_PUBLIQUE_DU_CLIENT>
+PublicKey = 4pYiU8qjoLR2B2QlKzTfpJfTy7/RmfJY5MctvEjZUxQ=
 AllowedIps = 10.7.200.11/32
 ```
 
 ➜ **Redémarrer l'interface du serveur après l'ajout du client**
 
 ```bash
-sudo systemctl restart wg-quick@wg0
+[root@dns oui]# sudo systemctl restart wg-quick@wg0
 ```
 
 ➜ **Vérifier qu'on voit bien un nouveau client**
 
 ```bash
-sudo wg show
+[root@dns oui]# sudo wg show
+interface: wg0
+  public key: XvFnMbp/P2vYWYjER44EXv85MXb6gJLBz2ntNZT4P3I=
+  private key: (hidden)
+  listening port: 51820
+
+peer: 4pYiU8qjoLR2B2QlKzTfpJfTy7/RmfJY5MctvEjZUxQ=
+  endpoint: 10.7.1.172:36950
+  allowed ips: 10.7.200.11/32
+  latest handshake: 30 seconds ago
+  transfer: 212 B received, 92 B sent
 ```
 
 ## 3. Proofs
 
 🌞 **Ping ping ping !**
 
-- depuis le client, faites un `ping` vers l'IP du serveur VPN au sein du réseau virtuel
-- donc `ping 10.7.200.1`
+```zsh
+┌──(oui㉿oui)-[~]
+└─$ ping 10.7.200.1
+PING 10.7.200.1 (10.7.200.1) 56(84) bytes of data.
+
+--- 10.7.200.1 ping statistics ---
+2 packets transmitted, 2 received, 0% packet loss, time 1001ms
+rtt min/avg/max/mdev = 1.662/2.101/2.540/0.439 ms
+```
 
 🌞 **Capture `ping1_vpn.pcap`**
 
-- capturez ces pings
-- ne vous attendez pas à vraiment voir directement des pings... vous regardez du trafic VPN
+[lien vers ma Capture](./ping1_vpn.pcap)
 
 ➜ **Sur le `client1.tp7.b1`**
 
-- ajoutez `10.7.200.1` comme votre passerelle, temporairement :
 
 ```bash
-# on supprime la passerelle actuelle manuellement
-sudo ip route delete default
+┌──(oui㉿oui)-[~]
+└─$ sudo ip route delete default
 
-# on ajoute une passerelle qui passe par le serveur VPN
-sudo ip route add default via 10.7.200.1
+
+┌──(oui㉿oui)-[~]
+└─$ sudo ip route add default via 10.7.200.1
 ```
 
 🌞 **Prouvez que vous avez toujours un accès internet**
 
-- mais on va pas utiliser `ping`
-- vous allez utiliser `traceroute`
-- l'avantage, c'est que lui, il affiche tous les intermédiaires entre vous et la destination
-- `traceroute 1.1.1.1` dans le compte-rendu
+```zsh
+┌──(oui㉿oui)-[~]
+└─$ traceroute 1.1.1.1
+traceroute to 1.1.1.1 (1.1.1.1), 30 hops max, 60 byte packets
 
-> On devrait voir que pour aller sur internet, vous passez par le serveur VPN.
+
+ 1  10.7.200.1 (10.7.200.1)  1.395 ms  1.357 ms  1.327 ms  // "Cette ligne-là nous montre qu'on passe par le VPN"
+
+
+ 2  * * *
+ 3  10.0.2.2 (10.0.2.2)  2.573 ms  2.565 ms  2.550 ms
+ 4  192.168.0.254 (192.168.0.254)  7.000 ms  6.990 ms  6.965 ms
+ 5  * * *
+ 6  station3.multimania.isdnet.net (194.149.174.100)  18.480 ms *  15.697 ms
+ 7  prs-b3-link.ip.twelve99.net (62.115.46.68)  16.620 ms  15.597 ms  15.584 ms
+ 8  cloudflare-ic-382666.ip.twelve99-cust.net (213.248.75.93)  16.415 ms  26.158 ms  26.304 ms
+ 9  141.101.67.79 (141.101.67.79)  16.385 ms 141.101.67.83 (141.101.67.83)  22.333 ms 141.101.67.54 (141.101.67.54)  16.072 ms
+10  one.one.one.one (1.1.1.1)  15.992 ms  16.303 ms  16.625 ms
+```
 
 ## 4. Private service
 
-> *Sur `web.tp7.b1`.*
-
-Last but not least, le serveur Web. Il est isolé dans un LAN (potentiellement à l'autre bout du monde), impossible d'y accéder... sauf si on est connectés au VPN.
-
 Pour ce faire :
 
-- recycler la machine web de la partie d'avant
 - branchez-le au nouveau host-only
 - attribuez-lui la nouvelle IP `10.7.2.11`
+```zsh
+[root@web oui]# ip a
+...
+2: enp0s3: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc fq_codel state UP group default qlen 1000
+    link/ether 08:00:27:87:29:0a brd ff:ff:ff:ff:ff:ff
+    inet 10.7.2.11/24 brd 10.7.2.255 scope global noprefixroute enp0s3
+...
+```
 - installer wireguard, et ajouter la machine comme nouveau client (même manip que sur `client1.tp7.b1`)
+```zsh
+[root@web oui]# sudo dnf install -y epel-release
+sudo dnf install -y wireguard-tools
+
+
+[root@web oui]# wg genkey | sudo tee /etc/wireguard/wg0.priv | wg pubkey | sudo tee /etc/wireguard/wg0.pub
+pQA60jKo4RmhH5c1oNrBk97Bho18BpyuQlrBeu7wV00=
+
+
+
+
+[root@web oui]# cat /etc/wireguard/wg0.conf
+[Interface]
+PrivateKey = oGbDyC/fId/hWYxOETGNVvB3rMsSBv1aE5nl7lACgVo=
+Address = 10.7.200.11/24
+
+[Peer]
+PublicKey = XvFnMbp/P2vYWYjER44EXv85MXb6gJLBz2ntNZT4P3I=
+AllowedIPs = 0.0.0.0/0
+Endpoint = 10.7.1.111:51820
+PersistentKeepalive = 25
+
+
+
+[root@web oui]# sudo wg-quick up wg0
+```
   - l'IP de `web.tp7.b1` doit être `10.7.200.37`
+  ```zsh
+  [root@web oui]# ip a
+...
+3: wg0: <POINTOPOINT,NOARP,UP,LOWER_UP> mtu 1420 qdisc noqueue state UNKNOWN group default qlen 1000
+    link/none 
+    inet 10.7.200.11/24 scope global wg0
+       valid_lft forever preferred_lft forever
+```
+
+et sur le serveur
+```zsh
+[root@dns oui]# cat /etc/wireguard/wg0.conf 
+...
+[Peer]
+PublicKey = pQA60jKo4RmhH5c1oNrBk97Bho18BpyuQlrBeu7wV00=
+AllowedIps = 10.7.200.11/32
+```
+
+```zsh
+[root@web oui]# traceroute 1.1.1.1
+traceroute to 1.1.1.1 (1.1.1.1), 30 hops max, 60 byte packets
+ 1  10.7.200.1 (10.7.200.1)  1.968 ms  1.828 ms  1.785 ms
+...
+```
 - modifier la configuration NGINX pour qu'il écoute uniquement sur l'IP `10.7.200.37`
+```zsh
+[root@web oui]# cat /etc/nginx/conf.d/sitedefou.conf 
+server {
+    # le nom que devront taper les clients pour visiter le site
+    server_name   sitedefou.tp7.b1;
+
+    # on indique sur quelle adresse IP et quel port écouter
+    listen        10.7.200.37:443 ssl;
+...
+```
 
 🌞 **Visitez le service Web à travers le VPN**
 
 - site web privé accessible uniquement à ceux qui sont connectés au VPN
 - `curl https://https://sitedefou.tp7.b1` en ayant modifié votre fichier hosts pour que pointe vers `10.7.200.37`
+```zsh
+┌──(oui㉿oui)-[~]
+└─$ curl -k https://sitedefou.tp7.b1
 
-Et on a donc *virtuellement* obtenu ce réseau LAN :
-
-![VPN be like](./img/vpn.svg)
+meow !
+```
