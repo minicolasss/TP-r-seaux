@@ -48,29 +48,138 @@
 - **configurer l'adresse IP demandée**
   - ça se fait depuis la VM directement : chaque client choisit sa propre IP comme toujours !
   - mettez l'IP indiquée dans le tableau, et le même masque pour tout le monde
+```zsh
+le routeur
+
+
+[root@vbox oui]# ip a
+
+2: enp0s3: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc fq_codel state UP group default qlen 1000
+
+    inet 10.0.2.15/24 brd 10.0.2.255 scope global dynamic noprefixroute enp0s3
+
+3: enp0s8: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc fq_codel state UP group default qlen 1000
+
+    inet 10.5.1.254/24 brd 10.5.1.255 scope global noprefixroute enp0s8
+
+
+
+client1
+
+┌──(oui㉿oui)-[~]
+└─$ ip a
+
+2: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc fq_codel state UP group default qlen 1000
+
+    inet 10.5.1.11/24 brd 10.5.1.255 scope global noprefixroute eth0
+
+
+
+
+client2
+
+┌──(oui㉿oui)-[~]
+└─$ ip a
+
+2: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc fq_codel state UP group default qlen 1000
+
+    inet 10.5.1.12/24 brd 10.5.1.255 scope global noprefixroute eth0
+```
+
+
 - **configurer un *hostname* pour la VM**
   - comme ça, quand on est dans un terminal, le nom de la machin est affiché, et on sait où on est !
   - c'est affiché dans le prompt dans votre terminal : `[it4@localhost]$`
   - le nom par défaut c'est `localhost` et c'est pourri !
 
+```zsh
+
+[oui@routeur ~]$ hostname
+routeur.tp5.b1
+
+┌──(oui㉿client1)-[~]
+└─$ hostname                  
+client1.tp5.b1
+
+┌──(oui㉿client2)-[~]
+└─$ hostname
+client2.tp5.b1
+```
+
 ☀️ **Uniquement avec des commandes, prouvez-que :**
 
 - vous avez bien configuré les adresses IP demandées (un `ip a` suffit hein)
-- vous avez bien configuré les *hostnames* demandés
-- tout le monde peut se ping au sein du réseau `10.5.1.0/24`
+```zsh
+[oui@routeur ~]$ ip a
 
-> *Dès que votre PC peut `ping` tout le monde, je vous conseille **fortement** de vous connecter en SSH à vos VMs. En particulier la VM Rocky qui a déjà un serveur SSH qui tourne par défaut.*
+2: enp0s3: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc fq_codel state UP group default qlen 1000
+
+    inet 10.0.2.15/24 brd 10.0.2.255 scope global dynamic noprefixroute enp0s3
+
+3: enp0s8: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc fq_codel state UP group default qlen 1000
+
+    inet 10.5.1.254/24 brd 10.5.1.255 scope global noprefixroute enp0s8
+
+
+
+┌──(oui㉿client1)-[~]
+└─$ ip a
+
+2: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc fq_codel state UP group default qlen 1000
+
+    inet 10.5.1.11/24 brd 10.5.1.255 scope global noprefixroute eth0
+
+
+
+┌──(oui㉿client2)-[~]
+└─$ ip a
+
+2: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc fq_codel state UP group default qlen 1000
+
+    inet 10.5.1.12/24 brd 10.5.1.255 scope global noprefixroute eth0
+
+```
+- vous avez bien configuré les *hostnames* demandés
+
+```zsh
+
+[oui@routeur ~]$ hostname
+routeur.tp5.b1
+
+┌──(oui㉿client1)-[~]
+└─$ hostname                  
+client1.tp5.b1
+
+┌──(oui㉿client2)-[~]
+└─$ hostname
+client2.tp5.b1
+```
+- tout le monde peut se ping au sein du réseau `10.5.1.0/24`
+```zsh
+[oui@routeur ~]$ ping 10.5.1.11
+
+--- 10.5.1.11 ping statistics ---
+3 packets transmitted, 3 received, 0% packet loss, time 2069ms
+rtt min/avg/max/mdev = 0.614/1.010/1.368/0.309 ms
+[oui@routeur ~]$ ping 10.5.1.12
+
+--- 10.5.1.12 ping statistics ---
+2 packets transmitted, 2 received, 0% packet loss, time 1003ms
+rtt min/avg/max/mdev = 1.267/1.582/1.898/0.315 ms
+
+
+┌──(oui㉿client2)-[~]
+└─$ ping 10.5.1.254
+
+--- 10.5.1.254 ping statistics ---
+2 packets transmitted, 2 received, 0% packet loss, time 1012ms
+rtt min/avg/max/mdev = 1.107/1.250/1.393/0.143 ms
+
+```
 
 # II. Accès internet pour tous
 
 ➜ **Actuellement, tout le monde est connecté, mais les clients n'ont pas internet !**
-
-![Conneted, no internet](./img/connected_no_internet.png)
-
-➜ Dans cette partie, on va faire en sorte que tout le monde ait un accès internet :
-
-- le routeur a déjà un accès internet
-- les clients vont se servir du routeur comme passerelle afin d'accéder à internet
 
 Pour ça :
 
@@ -79,27 +188,33 @@ Pour ça :
   - connaisse `routeur.tp.b1` comme sa passerelle (`10.5.1.254`)
   - connaisse l'adresse d'un serveur DNS (pour résoudre des noms comme `www.ynov.com` afin de connaître l'adresse IP associée à ce nom)
 
-> Si l'un de ces points n'est pas correctement configuré, on est bien "connectés" (genre y'a un LAN, tout le monde se `ping`) mais sans "accès internet".
-
 ## 1. Accès internet routeur
 
-> *Cette section 1. est à réaliser sur `routeur.tp5.b1`.*
 
 ☀️ **Déjà, prouvez que le routeur a un accès internet**
 
 - une seule commande `ping` suffit à prouver ça, vers un nom de domaine que vous connaissez, genre `www.ynov.com` (ou autre de votre choix :d)
+```zsh
+[oui@routeur ~]$ ping ynov.com
 
+--- ynov.com ping statistics ---
+3 packets transmitted, 3 received, 0% packet loss, time 2005ms
+rtt min/avg/max/mdev = 13.367/15.290/16.748/1.419 ms
+```
 ☀️ **Activez le routage**
 
 - toujours sur `routeur.tp5.b1`
 - la commande est dans le mémo toujours !
 
+```zsh
+[root@routeur oui]# sudo firewall-cmd --add-masquerade --permanent
+sudo firewall-cmd --reload
+Warning: ALREADY_ENABLED: masquerade
+success
+success
 
-> Tout est normalement déjà setup avec la carte NAT ! Si vous n'avez pas internet, c'est que votre carte NAT est éteinte. Allumez-la !
-
+```
 ## 2. Accès internet clients
-
-> *Cette section 2. est à réaliser sur `client1.tp5.b1` et `client2.tp5.b1`. Tout est dans [le mémo réseau Ubuntu](../../cours/memo/ubuntu.md).*
 
 ➜ **Définir l'adresse IP du routeur comme passerelle pour les clients**
 
@@ -109,29 +224,71 @@ Pour ça :
 
 - avec un `ping` vers une adresse IP publique vous connaissez
 - à ce stade, vos clients ne peuvent toujours pas résoudre des noms, donc impossible de visiter un site comme `www.ynov.com`
+```zsh
+┌──(oui㉿client1)-[~]
+└─$ ping 1.1.1.1
+
+--- 1.1.1.1 ping statistics ---
+2 packets transmitted, 2 received, 0% packet loss, time 1001ms
+rtt min/avg/max/mdev = 15.716/17.859/20.002/2.143 ms
+
+┌──(oui㉿client2)-[~]
+└─$ ping 1.1.1.1
+
+--- 1.1.1.1 ping statistics ---
+2 packets transmitted, 2 received, 0% packet loss, time 1001ms
+rtt min/avg/max/mdev = 16.197/16.585/16.973/0.388 ms
+```
+
 
 ➜ **Définir `1.1.1.1` comme serveur DNS que peuvent utiliser les clients**
 
 - redémarrez l'interface réseau si nécessaire pour que ça prenne effet
 - ainsi vos clients pourront spontanément envoyer des requêtes DNS vers `1.1.1.1` afin d'apprendre à quelle IP correspond un nom de domaine donné
 
-> *`1.1.1.1` c'est l'adresse IP publique d'un serveur DNS d'une entreprise qui s'appelle CloudFlare (un gros acteur du Web). Ils hébergent gracieusement et publiquement ce serveur DNS, afin que n'importe qui puisse l'utiliser.*
-
 ☀️ **Prouvez que les clients ont un accès internet**
 
 - avec de la résolution de noms cette fois
 - une seule commande `ping` suffit
+```zsh
+┌──(oui㉿client1)-[~]
+└─$ ping ynov.com 
+
+--- ynov.com ping statistics ---
+3 packets transmitted, 3 received, 0% packet loss, time 2001ms
+rtt min/avg/max/mdev = 16.053/18.557/23.434/3.448 ms
+
+
+┌──(oui㉿client2)-[~]
+└─$ ping ynov.com
+
+--- ynov.com ping statistics ---
+2 packets transmitted, 2 received, 0% packet loss, time 1001ms
+rtt min/avg/max/mdev = 16.787/16.903/17.019/0.116 ms
+```
 
 ☀️ **Montrez-moi le contenu final du fichier de configuration de l'interface réseau**
 
 - celui de `client2.tp5.b1` me suffira
 - pour le compte-rendu, une simple commande `cat` pour afficher le contenu du fichier
 
-> *Vous devriez pouvoir ouvrir un navigateur et visiter des sites sans soucis sur les clients.*
+```zsh
+┌──(oui㉿client1)-[~]
+└─$ cat /etc/netplan/01-netcfg.yaml     
+network:
+  version: 2
+  renderer: networkd
+  ethernets:
+    enp0s3:
+      dhcp4: no
+      addresses: [10.5.1.12/24]
+      gateway4: 10.5.1.254
+      nameservers:
+        addresses: [1.1.1.1]
+```
 
 # III. Serveur SSH
 
-> *Cette partie III. est à réaliser sur `routeur.tp5.b1`. Tout est dans [le mémo réseau Rocky](../../cours/memo/rocky.md).*
 
 ☀️ **Sur `routeur.tp5.b1`, déterminer sur quel port écoute le serveur SSH**
 
@@ -140,14 +297,20 @@ Pour ça :
 - dans le compte rendu je veux que vous utilisiez une syntaxe avec `... | grep <PORT>` pour isoler la ligne avec le port intéressant
   - par exemple si, vous repérez le port 8888, vous ajoutez ` | grep 8888` à votre commande, pour me mettre en évidence le por que vous avez repéré
 
+```zsh
+[root@routeur oui]# ss -lnpt | grep 22
+LISTEN 0      128          0.0.0.0:22        0.0.0.0:*    users:(("sshd",pid=734,fd=3))
+LISTEN 0      128             [::]:22           [::]:*    users:(("sshd",pid=734,fd=4))
+```
+
 ☀️ **Sur `routeur.tp5.b1`, vérifier que ce port est bien ouvert**
 
 - la commande est dans [le mémooooo](../../cours/memo/rocky.md) pour voir la configuration du pare-feu
 
-> ***Si vous voyez le "service" `ssh` ouvert dans le pare-feu**, il correspond à un port bien précis. Pour voir la correspondance entre les "services" et le port associé, vous pouvez consulter le contenu du fichier `/etc/services`. Ca devrait correspondre à ce que vous avez vu juste avant !*
-
-➜ Dernière fois que je le dis : **connectez-vous en SSH pour administrer la machine Rocky Linux**, n'utilisez pas l'interface console de VirtualBox.
-
+```zsh
+[root@routeur oui]# firewall-cmd --list-all | grep 22
+  ports: 22/tcp
+```
 # IV. Serveur DHCP
 
 ## 1. Le but
