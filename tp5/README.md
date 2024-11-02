@@ -10,8 +10,7 @@
   - [2. Accès internet clients](#2-accès-internet-clients)
 - [III. Serveur SSH](#iii-serveur-ssh)
 - [IV. Serveur DHCP](#iv-serveur-dhcp)
-  - [1. Le but](#1-le-but)
-  - [2. Comment le faire](#2-comment-le-faire)
+
   - [3. Rendu attendu](#3-rendu-attendu)
     - [A. Installation et configuration du serveur DHCP](#a-installation-et-configuration-du-serveur-dhcp)
     - [B. Test avec un nouveau client](#b-test-avec-un-nouveau-client)
@@ -313,59 +312,27 @@ LISTEN 0      128             [::]:22           [::]:*    users:(("sshd",pid=734
 ```
 # IV. Serveur DHCP
 
-## 1. Le but
-
-➜ On installe et configure **notre propre serveur DHCP** dans cette partie ! Le but est le suivant :
-
-- **dès qu'un client se connecte à notre réseau, il a automatiquement internet !**
-- ça **évite de faire à la main** comme vous avez fait dans ce TP :
-  - choisir et configurer une adresse IP
-  - choisir et configurer l'adresse d'un serveur DNS
-  - configurer l'adresse de la passerelle
-- **dès qu'il se connecte, il essaiera automatiquement de contacter un serveur DHCP**
-- **notre serveur DHCP lui proposera alors automatiquement tout le nécessaire pour avoir un accès internet**, à savoir :
-  - une adresse IP disponible
-  - l'adresse d'un serveur DNS
-  - l'adresse de la passerelle du réseau
-
-![DHCP server](./img/dhcp.png)
-
-## 2. Comment le faire
-
-> Cette fois, je vous ré-écris pas tout, je vous laisse chercher sur internet par vous-mêmes "install dhcp server rocky 9", ou vous référer [par exemple à ce lien](https://www.server-world.info/en/note?os=Rocky_Linux_8&p=dhcp&f=1) qui résume très bien la chose.
-
-➜ Peu importe le lien que vous suivez, **les étapes seront les suivantes** :
-
-- installation du paquet qui contient le serveur DHCP
-  - commande `dnf install`
-- modification de la configuration
-  - c'est un fichier texte (comme toujours)
-  - donc avec `nano` ou `vim` par exemple
-- (re)démarrage du service DHCP
-  - avec un `systemctl start`
-
-➜ **Et si ça fonctionne pas, c'est que tu t'es planté dans le fichier de conf, donc tu vas lire pourquoi dans les logs** :
-
-- voir les logs d'erreur
-  - avec une commande `journalctl`
-  - généralement, il dit clairement l'erreur
-- ajustement de la configuration
-  - c'est un fichier texte (comme toujours)
-  - donc avec `nano` ou `vim` par exemple
-- redémarrage du service DHCP
-  - avec un `systemctl restart`
-
-> N'hésitez pas, comme d'hab, à m'appeler si vous galérez avec cette section !
-
-## 3. Rendu attendu
-
-> *Vous pouvez éteindre `client1.tp5.b1` et `client2.tp5.b1` pour limiter l'utilisation des ressources hein.*
-
-⚠️⚠️⚠️ **Vous n'avez le droit d'utiliser QUE des lignes que vous comprenez dans le fichier de configuration.** Et pour lesquelles vous avez adapté les valeurs au TP. **Vous devez enlever les lignes de configuration inutiles pour notre TP.**
-
 ### A. Installation et configuration du serveur DHCP
 
-> *Cette section A. est à réaliser sur `routeur.tp5.b1`.*
+```zsh
+[root@routeur oui]# dnf -y install dhcp-server
+
+[root@routeur oui]# vim /etc/dhcp/dhcpd.conf 
+
+[root@routeur oui]# cat /etc/dhcp/dhcpd.conf 
+subnet 10.5.1.0 netmask 255.255.255.0 {
+	range dynamic-bootp 10.5.1.137 10.5.1.237;
+	option broadcast-address 10.5.1.255;
+	option routers 10.5.1.254;
+	option domain-name-servers 1.1.1.1;
+}
+
+[root@routeur oui]# systemctl enable --now dhcpd
+[root@routeur oui]# firewall-cmd --add-service=dhcp
+success
+[root@routeur oui]# firewall-cmd --runtime-to-permanent
+success
+```
 
 ☀️ **Installez et configurez un serveur DHCP sur la machine `routeur.tp5.b1`**
 
@@ -375,6 +342,26 @@ LISTEN 0      128             [::]:22           [::]:*    users:(("sshd",pid=734
   - indiquer qu'on propose aux clients des adresses IP entre `10.5.1.137` et `10.5.1.237`
   - indiquer aux clients que la passerelle dans le réseau ici c'est `10.5.1.254`
   - indiquer aux clients qu'un serveur DNS joignable depuis le réseau c'est `1.1.1.1`
+
+```zsh
+[root@routeur oui]# dnf -y install dhcp-server
+
+[root@routeur oui]# vim /etc/dhcp/dhcpd.conf 
+
+[root@routeur oui]# cat /etc/dhcp/dhcpd.conf 
+subnet 10.5.1.0 netmask 255.255.255.0 {
+	range dynamic-bootp 10.5.1.137 10.5.1.237;
+	option broadcast-address 10.5.1.255;
+	option routers 10.5.1.254;
+	option domain-name-servers 1.1.1.1;
+}
+
+[root@routeur oui]# systemctl enable --now dhcpd
+[root@routeur oui]# firewall-cmd --add-service=dhcp
+success
+[root@routeur oui]# firewall-cmd --runtime-to-permanent
+success
+```
 
 ### B. Test avec un nouveau client
 
@@ -387,6 +374,14 @@ LISTEN 0      128             [::]:22           [::]:*    users:(("sshd",pid=734
 - vérifiez que c'est bien une adresse IP entre `.137` et `.237`
 - prouvez qu'il a immédiatement un accès internet
 
+```zsh
+┌──(oui㉿client1)-[~]
+└─$ ip a
+
+2: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc fq_codel state UP group default qlen 1000
+
+    inet 10.5.1.137/24 brd 10.5.1.255 scope global dynamic noprefixroute eth0
+```
 ### C. Consulter le bail DHCP
 
 ➜ **Côté serveur DHCP, à chaque fois qu'une adresse IP est proposée à quelqu'un, le serveur crée un fichier texte appelé *bail DHCP*** (ou *DHCP lease* en anglais).
@@ -398,8 +393,6 @@ Il contient toutes les informations liées à l'échange avec le client, notamme
 - heure et date précises de l'échange DHCP
 - durée de validité du *bail DHCP*
 
-> *A l'issue de cette durée de validité, le client devra de nouveau contacter le serveur, pour s'assurer que l'adresse IP est toujours libre. Rappelez-vous que DHCP est utilisé partout pour attribuer automatiquement des adresses IP aux clients, à l'école, chez vous, etc. C'est nécessaire que le bail expire pour pas qu'un client qui se connecte une seule fois monopolise à vie une adresse IP.*
-
 ☀️ **Consultez le *bail DHCP* qui a été créé pour notre client**
 
 - à faire sur `routeur.tp5.b1`
@@ -407,12 +400,50 @@ Il contient toutes les informations liées à l'échange avec le client, notamme
 - afficher le contenu du fichier qui contient les *baux DHCP*
 - on devrait y voir l'IP qui a été proposée au client, ainsi que son adresse MAC
 
+```zsh
+[root@routeur oui]# cat /var/lib/dhcpd/dhcpd.leases 
+authoring-byte-order little-endian;
+
+server-duid "\000\001\000\001.\270\333\321\010\000'A\203,";
+
+lease 10.5.1.137 {
+  starts 6 2024/11/02 12:47:22;
+  ends 0 2024/11/03 00:47:22;
+  cltt 6 2024/11/02 12:47:22;
+  binding state active;
+  next binding state free;
+  rewind binding state free;
+  hardware ethernet 08:00:27:58:a8:58;
+  uid "\001\010\000'X\250X";
+  client-hostname "client1";
+}
+lease 10.5.1.138 {
+  starts 6 2024/11/02 12:47:37;
+  ends 0 2024/11/03 00:47:37;
+  cltt 6 2024/11/02 12:47:37;
+  binding state active;
+  next binding state free;
+  rewind binding state free;
+  hardware ethernet 08:00:27:d8:78:0d;
+  uid "\001\010\000'\330x\015";
+  client-hostname "client2";
+}
+```
 ☀️ **Confirmez qu'il s'agit bien de la bonne adresse MAC**
 
 - à faire sur `client3.tp5.b1`
 - consultez l'adresse MAC du client
 - on peut consulter les adresses MAC des cartes réseau avec un simple `ip a` 
 
+```zsh                                                                         
+┌──(oui㉿client1)-[~]
+└─$ ip a
+
+2: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc fq_codel state UP group default qlen 1000
+    link/ether 08:00:27:58:a8:58 brd ff:ff:ff:ff:ff:ff
+    inet 10.5.1.137/24 brd 10.5.1.255 scope global dynamic noprefixroute eth0
+
+```
 # Bonus
 
 Deux ptits TP bonus, qui font écho à tout ce qu'on a vu jusqu'à maintenant :
