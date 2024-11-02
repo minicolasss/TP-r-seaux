@@ -4,7 +4,6 @@
 
 - [TP5 : Un ptit LAN à nous](#tp5--un-ptit-lan-à-nous)
   - [Sommaire](#sommaire)
-- [0. Prérequis](#0-prérequis)
 - [I. Setup](#i-setup)
 - [II. Accès internet pour tous](#ii-accès-internet-pour-tous)
   - [1. Accès internet routeur](#1-accès-internet-routeur)
@@ -19,19 +18,9 @@
     - [C. Consulter le bail DHCP](#c-consulter-le-bail-dhcp)
 - [Bonus](#bonus)
 
-# 0. Prérequis
 
-➜ **Munissez-vous des ptits mémos que je vous ai préparés :d**
-
-- pour toutes les configurations à effectuer, je vous file toutes les commandes/syntaxes/fichiers etc.
-  - [pour les machines Ubuntu c'est ici](../../cours/memo/ubuntu.md)
-  - [pour Rocky c'est làààà](../../cours/memo/rocky.md)
 
 # I. Setup
-
-➜ **Mettre en place le setup suivant :**
-
-![Lab 1 TP5](./img/lab1_tp5.png)
 
 ➜ **Ptit tableau avec les adresses IP**
 
@@ -42,17 +31,17 @@
 | `client2.tp5.b1`  | `10.5.1.12`                  |
 | `routeur.tp5.b1`  | `10.5.1.254`                 |
 
-> `/24` correspond à un masque de `255.255.255.0`. C'est deux façons différentes d'écrire la même chose, on voit ça bientôt. Il faudra indiquer le même masque à toutes les machines.
 
 ➜ **Il faut donc, sur votre PC :**
 
 - créer un host-only (réseau privé-hôte en français)
 - définir l'IP `10.5.1.1/24` pour le PC depuis l'interface de VBox
-- ajouter les cartes réseau nécessaires à toutes les VMs
-  - 1 carte host-only pour les 3 VMs (clients et routeur)
-  - 1 carte NAT en + pour le routeur
-
-> *Pour rappel la carte host-only, comme montrée sur le schéma, permet que tout le monde soit connecté à un switch virtuel, et ainsi former un LAN (réseau local). La carte NAT permet uniquement un accès internet.*
+```zsh
+5: vboxnet1: <NO-CARRIER,BROADCAST,MULTICAST,UP> mtu 1500 qdisc fq_codel state DOWN group default qlen 1000
+    link/ether 0a:00:27:00:00:01 brd ff:ff:ff:ff:ff:ff
+    inet 10.5.1.1/24 brd 10.5.1.255 scope global vboxnet1
+       valid_lft forever preferred_lft forever
+```
 
 ➜ **Ensuite, pour chaque VM...**
 
