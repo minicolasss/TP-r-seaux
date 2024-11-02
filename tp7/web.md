@@ -242,6 +242,4 @@ sudo systemctl restart nginx
 - cette session TCP doit être celle de l'échange HTTPS pour récupérer la page du serveur web
 - il faut donc capturer pendant que tu visites le site web en HTTPS
 
-> ⚠️⚠️ *Remarquez que ~~vous pouvez voir en clair le texte "meow !"~~ vous voyez plus rien dukoo dans la capture Wireshark. Juste y'a du trafic chiffré qui circule, c'est tout ce qu'on peut dire.*
 
-![Such secure](./img/such_secure.png)
